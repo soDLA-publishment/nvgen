@@ -95,7 +95,7 @@ class nvdla_dma_wr_rsp_if(implicit val conf: nvdlaConfig) extends Bundle{
 
 
 class csb2dp_if extends Bundle{
-    val req = Flipped(DecoupledIO(UInt(63.W)))
+    val req = Flipped(ValidIO(UInt(63.W)))
     val resp = ValidIO(UInt(34.W))
 }
 
@@ -114,7 +114,6 @@ class reg_control_if extends Bundle{
     val wr_en = Input(Bool())
 }
 
-//
 
 class cdma2sc_if(implicit val conf: nvdlaConfig) extends Bundle{
     val addr = Output(UInt(conf.NVDLA_MEM_ADDRESS_WIDTH.W))

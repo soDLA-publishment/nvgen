@@ -70,6 +70,10 @@ class NV_NVDLA_partition_p(implicit val conf: nvdlaConfig) extends Module {
 
         val pwrbus_ram_pd = Input(UInt(32.W))
 
+        //retime cross-through
+        val mac_a2accu_src = if(conf.NVDLA_RETIMING_ENABLE) Some(Flipped(ValidIO(new cmac2cacc_if))) else None
+        val mac_a2accu_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(ValidIO(new cmac2cacc_if)) else None
+
     })
 //     
 //          ┌─┐       ┌─┐
@@ -182,6 +186,21 @@ class NV_NVDLA_partition_p(implicit val conf: nvdlaConfig) extends Module {
     u_NV_NVDLA_sdp.io.nvdla_clock.dla_clk_ovr_on_sync := dla_clk_ovr_on_sync
     u_NV_NVDLA_sdp.io.nvdla_clock.global_clk_ovr_on_sync := global_clk_ovr_on_sync 
     u_NV_NVDLA_sdp.io.nvdla_clock.tmc2slcg_disable_clock_gating := io.tmc2slcg_disable_clock_gating
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //  NVDLA Partition P:    Retiming path cmac_a->cacc                  //
+    ////////////////////////////////////////////////////////////////////////
+    val u_NV_NVDLA_RT_cmac_a2cacc = if(conf.NVDLA_RETIMING_ENABLE) 
+                                    Some(Module(new NV_NVDLA_RT_cmac_a2cacc(conf.RT_CMAC_A2CACC_LATENCY)))
+                                    else None
+    if(conf.NVDLA_RETIMING_ENABLE){
+        //Retiming path cmac_a->cacc
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.mac2accu_src <> io.mac_a2accu_src.get
+        io.mac_a2accu_dst.get <> u_NV_NVDLA_RT_cmac_a2cacc.get.io.mac2accu_dst
+    }    
 }
 
 

@@ -14,12 +14,11 @@ class NV_NVDLA_partition_a(implicit val conf: nvdlaConfig) extends Module {
         val tmc2slcg_disable_clock_gating = Input(Bool())
         val direct_reset_ = Input(Bool())
         val dla_reset_rstn = Input(Bool())
-
         //csc
         val accu2sc_credit_size = ValidIO((UInt(3.W)))
         //csb2cacc
         val csb2cacc = new csb2dp_if 
-        //glb
+        //cacc2glb
         val cacc2glb_done_intr_pd = Output(UInt(2.W))
         //mac
         val mac_a2accu = Flipped(ValidIO(new cmac2cacc_if))    /* data valid */
@@ -52,19 +51,25 @@ class NV_NVDLA_partition_a(implicit val conf: nvdlaConfig) extends Module {
 //           └─┐  ┐  ┌───────┬──┐  ┌──┘         
 //             │ ─┤ ─┤       │ ─┤ ─┤         
 //             └──┴──┘       └──┴──┘ 
-
-////////////////////////////////////////////////////////////////////////
-//  NVDLA Partition M:    Reset Syncer                                //
-////////////////////////////////////////////////////////////////////////
+    val u_NV_NVDLA_cacc = Module(new NV_NVDLA_cacc)
+    val u_NV_NVDLA_RT_cmac_a2cacc = if(conf.NVDLA_RETIMING_ENABLE) 
+                                    Some(Module(new NV_NVDLA_RT_cmac_a2cacc(conf.RT_CMAC_A2CACC_LATENCY)))
+                                    else None
+    val u_NV_NVDLA_RT_cmac_b2cacc = if(conf.NVDLA_RETIMING_ENABLE)
+                                    Some(Module(new NV_NVDLA_RT_cmac_a2cacc(conf.RT_CMAC_B2CACC_LATENCY)))
+                                    else None 
+    ////////////////////////////////////////////////////////////////////////
+    //  NVDLA Partition M:    Reset Syncer                                //
+    ////////////////////////////////////////////////////////////////////////
     val u_partition_a_reset = Module(new NV_NVDLA_reset)
     u_partition_a_reset.io.nvdla_clk  := io.nvdla_core_clk
     u_partition_a_reset.io.dla_reset_rstn := io.dla_reset_rstn
     u_partition_a_reset.io.direct_reset_ := io.direct_reset_
     u_partition_a_reset.io.test_mode := io.test_mode
     val nvdla_core_rstn = u_partition_a_reset.io.synced_rstn
-////////////////////////////////////////////////////////////////////////
-// SLCG override
-////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    // SLCG override
+    ////////////////////////////////////////////////////////////////////////
     val u_dla_clk_ovr_on_sync = Module(new NV_NVDLA_sync3d)
     u_dla_clk_ovr_on_sync.io.clk := io.nvdla_core_clk
     u_dla_clk_ovr_on_sync.io.sync_i := io.nvdla_clk_ovr_on
@@ -76,19 +81,24 @@ class NV_NVDLA_partition_a(implicit val conf: nvdlaConfig) extends Module {
     u_global_clk_ovr_on_sync.io.sync_i := io.global_clk_ovr_on
     val global_clk_ovr_on_sync = u_global_clk_ovr_on_sync.io.sync_o 
 
-////////////////////////////////////////////////////////////////////////
-//  NVDLA Partition A:     Convolution Accumulator                    //
-////////////////////////////////////////////////////////////////////////
-//stepheng, modify for cacc verification
-    val u_NV_NVDLA_cacc = Module(new NV_NVDLA_cacc)
+    ////////////////////////////////////////////////////////////////////////
+    //  NVDLA Partition A:     Convolution Accumulator                    //
+    ////////////////////////////////////////////////////////////////////////
+    //stepheng, modify for cacc verification
     u_NV_NVDLA_cacc.io.nvdla_clock.nvdla_core_clk := io.nvdla_core_clk
     u_NV_NVDLA_cacc.io.nvdla_core_rstn := nvdla_core_rstn
     u_NV_NVDLA_cacc.io.pwrbus_ram_pd := io.pwrbus_ram_pd
 
     io.cacc2glb_done_intr_pd := u_NV_NVDLA_cacc.io.cacc2glb_done_intr_pd
 
-    u_NV_NVDLA_cacc.io.mac_a2accu <> io.mac_a2accu  
-    u_NV_NVDLA_cacc.io.mac_b2accu <> io.mac_b2accu 
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_NV_NVDLA_cacc.io.mac_a2accu <> u_NV_NVDLA_RT_cmac_a2cacc.get.io.mac2accu_dst
+        u_NV_NVDLA_cacc.io.mac_b2accu <> u_NV_NVDLA_RT_cmac_b2cacc.get.io.mac2accu_dst 
+    }
+    else{
+        u_NV_NVDLA_cacc.io.mac_a2accu <> io.mac_a2accu  
+        u_NV_NVDLA_cacc.io.mac_b2accu <> io.mac_b2accu 
+    }
 
     io.cacc2sdp_pd <> u_NV_NVDLA_cacc.io.cacc2sdp_pd
 
@@ -100,7 +110,19 @@ class NV_NVDLA_partition_a(implicit val conf: nvdlaConfig) extends Module {
     u_NV_NVDLA_cacc.io.nvdla_clock.global_clk_ovr_on_sync := global_clk_ovr_on_sync
     u_NV_NVDLA_cacc.io.nvdla_clock.tmc2slcg_disable_clock_gating := io.tmc2slcg_disable_clock_gating
 
-
+    ////////////////////////////////////////////////////////////////////////
+    // Retiming cell
+    ////////////////////////////////////////////////////////////////////////
+    if(conf.NVDLA_RETIMING_ENABLE){
+        //Retiming path cmac_a->cacc
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_cmac_a2cacc.get.io.mac2accu_src <> io.mac_a2accu  
+        //Retiming path cmac_b->cacc
+        u_NV_NVDLA_RT_cmac_b2cacc.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_cmac_b2cacc.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_cmac_b2cacc.get.io.mac2accu_src <> io.mac_b2accu 
+    }
 }
 
 

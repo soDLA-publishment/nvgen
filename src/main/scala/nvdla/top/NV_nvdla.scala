@@ -87,10 +87,27 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
     u_partition_o.io.cdma_wt2glb_done_intr_pd := u_partition_c.io.cdma_wt2glb_done_intr_pd
     //cmac
     u_partition_o.io.csb2cmac_a <> u_partition_ma.io.csb2cmac_a
-    u_partition_o.io.csb2cmac_b <> u_partition_mb.io.csb2cmac_a
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_o.io.csb2cmac_b <> u_partition_c.io.csb2cmac_b_dst.get
+    }
+    else{
+        u_partition_o.io.csb2cmac_b <> u_partition_mb.io.csb2cmac_a
+    }
     //cacc
-    u_partition_o.io.csb2cacc <> u_partition_a.io.csb2cacc
-    u_partition_o.io.cacc2glb_done_intr_pd := u_partition_a.io.cacc2glb_done_intr_pd
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_o.io.csb2cacc <> u_partition_c.io.csb2cacc_dst.get
+    }
+    else{
+        u_partition_o.io.csb2cacc <> u_partition_a.io.csb2cacc
+    }
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_o.io.cacc2glb_done_intr_pd := u_partition_c.io.cacc2glb_done_intr_dst_pd.get
+    }
+    else{
+        u_partition_o.io.cacc2glb_done_intr_pd := u_partition_a.io.cacc2glb_done_intr_pd
+    }
+
+    
     //csc
     u_partition_o.io.csb2csc <> u_partition_c.io.csb2csc
     //apb
@@ -161,6 +178,11 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
             u_partition_o.io.sdp_n2cvif_rd_cdt_lat_fifo_pop.get := u_partition_p.io.sdp_n2cvif_rd_cdt_lat_fifo_pop.get
         }
         
+    }  
+
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_o.io.sc2mac_dat_a_src.get <> u_partition_c.io.sc2mac_dat_a
+        u_partition_o.io.sc2mac_wt_a_src.get <> u_partition_c.io.sc2mac_wt_a
     }
 
     io.nvdla_core2dbb_ar <> u_partition_o.io.mcif2noc_axi_ar
@@ -193,9 +215,18 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
     u_partition_c.io.accu2sc_credit_size <> u_partition_a.io.accu2sc_credit_size
     u_partition_c.io.pwrbus_ram_pd := io.nvdla_pwrbus_ram_c_pd
 
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_c.io.csb2cacc_src.get <> u_partition_a.io.csb2cacc
+        u_partition_c.io.csb2cmac_b_src.get <> u_partition_mb.io.csb2cmac_a
+        u_partition_c.io.cacc2glb_done_intr_src_pd.get := u_partition_a.io.cacc2glb_done_intr_pd
+    }
+
     ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition MA                                                //
     ////////////////////////////////////////////////////////////////////////
+
+    val sc2mac_dat_a_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(ValidIO(new csc2cmac_data_if)) else None 
+    val sc2mac_wt_a_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(ValidIO(new csc2cmac_wt_if)) else None
 
     u_partition_ma.io.test_mode := io.test_mode
     u_partition_ma.io.direct_reset_ := io.direct_reset_
@@ -205,9 +236,14 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
     u_partition_ma.io.dla_reset_rstn := nvdla_core_rstn
     u_partition_ma.io.nvdla_clk_ovr_on := nvdla_clk_ovr_on
 
-    u_partition_ma.io.sc2mac_dat <> u_partition_c.io.sc2mac_dat_a
-    u_partition_ma.io.sc2mac_wt <> u_partition_c.io.sc2mac_wt_a  
-
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_ma.io.sc2mac_dat <> u_partition_o.io.sc2mac_dat_a_dst.get
+        u_partition_ma.io.sc2mac_wt <> u_partition_o.io.sc2mac_wt_a_dst.get 
+    }
+    else{
+        u_partition_ma.io.sc2mac_dat <> u_partition_c.io.sc2mac_dat_a
+        u_partition_ma.io.sc2mac_wt <> u_partition_c.io.sc2mac_wt_a  
+    }
 
 
     ////////////////////////////////////////////////////////////////////////
@@ -222,9 +258,9 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
     u_partition_mb.io.dla_reset_rstn := nvdla_core_rstn
     u_partition_mb.io.nvdla_clk_ovr_on := nvdla_clk_ovr_on
 
-    u_partition_mb.io.sc2mac_dat <> u_partition_c.io.sc2mac_dat_b
-    u_partition_mb.io.sc2mac_wt <> u_partition_c.io.sc2mac_wt_b 
 
+    u_partition_mb.io.sc2mac_dat <> u_partition_c.io.sc2mac_dat_b
+    u_partition_mb.io.sc2mac_wt <> u_partition_c.io.sc2mac_wt_b  
 
     ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition A                                                 //
@@ -237,8 +273,14 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
     u_partition_a.io.dla_reset_rstn := nvdla_core_rstn
     u_partition_a.io.nvdla_clk_ovr_on := nvdla_clk_ovr_on
     //mac
-    u_partition_a.io.mac_a2accu <> u_partition_ma.io.mac2accu
-    u_partition_a.io.mac_b2accu <> u_partition_mb.io.mac2accu
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_a.io.mac_a2accu <> u_partition_p.io.mac_a2accu_dst.get
+        u_partition_a.io.mac_b2accu <> u_partition_mb.io.mac2accu
+    }
+    else{
+        u_partition_a.io.mac_a2accu <> u_partition_ma.io.mac2accu
+        u_partition_a.io.mac_b2accu <> u_partition_mb.io.mac2accu
+    }
 
     u_partition_a.io.pwrbus_ram_pd := io.nvdla_pwrbus_ram_a_pd
     
@@ -259,6 +301,10 @@ class NV_nvdla(implicit val conf: nvdlaConfig) extends Module {
 
     u_partition_p.io.pwrbus_ram_pd := io.nvdla_pwrbus_ram_p_pd
 
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_partition_p.io.mac_a2accu_src.get <> u_partition_ma.io.mac2accu
+    }
+       
 }
 
 

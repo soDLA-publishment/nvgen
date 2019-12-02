@@ -10,8 +10,8 @@ class NV_NVDLA_RT_csb2dp(delay: Int)(implicit val conf: nvdlaConfig) extends Mod
         val nvdla_core_clk = Input(Clock())
         val nvdla_core_rstn = Input(Bool())
 
-        val csb2dp_src = new csb2dp_if
-        val csb2dp_dst = Flipped(new csb2dp_if)
+        val csb2dp_src = Flipped(new csb2dp_if)
+        val csb2dp_dst = new csb2dp_if
     })
 withClockAndReset(io.nvdla_core_clk, !io.nvdla_core_rstn){
 
@@ -21,8 +21,8 @@ withClockAndReset(io.nvdla_core_clk, !io.nvdla_core_rstn){
     val dp2csb_resp_pd_d  = Wire(UInt(34.W)) +: Seq.fill(delay)(Reg(UInt(34.W))) 
 
     //initial condition  
-    csb2dp_req_pvld_d(0) := io.csb2dp_src.req.valid
-    csb2dp_req_pd_d(0) := io.csb2dp_src.req.bits
+    csb2dp_req_pvld_d(0) := io.csb2dp_dst.req.valid
+    csb2dp_req_pd_d(0) := io.csb2dp_dst.req.bits
 
     dp2csb_resp_valid_d(0) := io.csb2dp_src.resp.valid
     dp2csb_resp_pd_d(0) := io.csb2dp_src.resp.bits
@@ -39,8 +39,8 @@ withClockAndReset(io.nvdla_core_clk, !io.nvdla_core_rstn){
     }  
         
     //output assignment
-    io.csb2dp_dst.req.valid := csb2dp_req_pvld_d(delay)
-    io.csb2dp_dst.req.bits := csb2dp_req_pd_d(delay)
+    io.csb2dp_src.req.valid := csb2dp_req_pvld_d(delay)
+    io.csb2dp_src.req.bits := csb2dp_req_pd_d(delay)
     io.csb2dp_dst.resp.valid := dp2csb_resp_valid_d(delay)
     io.csb2dp_dst.resp.bits := dp2csb_resp_pd_d(delay)
 

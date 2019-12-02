@@ -11,14 +11,14 @@ class nv_small
   val SDP_LUT_ENABLE = false
   val SDP_BS_ENABLE = true
   val SDP_BN_ENABLE = true
-  val SDP_EW_ENABLE = false
+  val SDP_EW_ENABLE = true
   val BDMA_ENABLE = false
   val RUBIK_ENABLE = false
   val RUBIK_CONTRACT_ENABLE = false
   val RUBIK_RESHAPE_ENABLE = false
   val PDP_ENABLE = true
   val CDP_ENABLE = true
-  val RETIMING_ENABLE = false
+  val RETIMING_ENABLE = true
   val MAC_ATOMIC_C_SIZE = 8 
   val MAC_ATOMIC_K_SIZE = 8
   val MEMORY_ATOMIC_SIZE = 8
@@ -28,7 +28,7 @@ class nv_small
   val CBUF_BANK_DEPTH = 512
   val SDP_BS_THROUGHPUT = 1
   val SDP_BN_THROUGHPUT = 1
-  val SDP_EW_THROUGHPUT = 0
+  val SDP_EW_THROUGHPUT = 1
   val PDP_THROUGHPUT = 1
   val CDP_THROUGHPUT = 1
   val PRIMARY_MEMIF_LATENCY = 64

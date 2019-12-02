@@ -2,6 +2,7 @@ package nvdla
 
 import chisel3._
 import chisel3.experimental._
+import chisel3.util._
 
 
 class NV_NVDLA_RT_cmac_a2cacc(delay: Int)(implicit val conf: nvdlaConfig) extends Module {

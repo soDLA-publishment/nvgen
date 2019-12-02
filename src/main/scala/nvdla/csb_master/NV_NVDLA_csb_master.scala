@@ -158,7 +158,7 @@ u_client_cfgrom.io.core_req_pop_valid := core_req_pop_valid
 u_client_cfgrom.io.core_byte_addr := core_byte_addr
 u_client_cfgrom.io.addr_mask := addr_mask
 u_client_cfgrom.io.core_req_pd_d1 := core_req_pd_d1
-u_client_cfgrom.io.csb2client <> io.csb2cfgrom
+u_client_cfgrom.io.csb2dp <> io.csb2cfgrom
 val cfgrom_resp_pd = u_client_cfgrom.io.client_resp_pd
 val select_cfgrom = u_client_cfgrom.io.select_client
 
@@ -169,7 +169,7 @@ u_client_glb.io.core_req_pop_valid := core_req_pop_valid
 u_client_glb.io.core_byte_addr := core_byte_addr
 u_client_glb.io.addr_mask := addr_mask
 u_client_glb.io.core_req_pd_d1 := core_req_pd_d1
-u_client_glb.io.csb2client <> io.csb2glb
+u_client_glb.io.csb2dp <> io.csb2glb
 val glb_resp_pd = u_client_glb.io.client_resp_pd
 val select_glb = u_client_glb.io.select_client
 
@@ -180,7 +180,7 @@ u_client_mcif.io.core_req_pop_valid := core_req_pop_valid
 u_client_mcif.io.core_byte_addr := core_byte_addr
 u_client_mcif.io.addr_mask := addr_mask
 u_client_mcif.io.core_req_pd_d1 := core_req_pd_d1
-u_client_mcif.io.csb2client <> io.csb2mcif
+u_client_mcif.io.csb2dp <> io.csb2mcif
 val mcif_resp_pd = u_client_mcif.io.client_resp_pd
 val select_mcif = u_client_mcif.io.select_client
 
@@ -192,7 +192,7 @@ if(conf.NVDLA_SECONDARY_MEMIF_ENABLE){
     u_client_cvif.get.io.core_byte_addr := core_byte_addr
     u_client_cvif.get.io.addr_mask := addr_mask
     u_client_cvif.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_cvif.get.io.csb2client <> io.csb2cvif.get
+    u_client_cvif.get.io.csb2dp <> io.csb2cvif.get
 }
 val cvif_resp_pd = if(conf.NVDLA_SECONDARY_MEMIF_ENABLE) Some(u_client_cvif.get.io.client_resp_pd) else None
 val select_cvif = if(conf.NVDLA_SECONDARY_MEMIF_ENABLE) u_client_cvif.get.io.select_client else false.B
@@ -205,7 +205,7 @@ if(conf.NVDLA_BDMA_ENABLE){
     u_client_bdma.get.io.core_byte_addr := core_byte_addr
     u_client_bdma.get.io.addr_mask := addr_mask
     u_client_bdma.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_bdma.get.io.csb2client <> io.csb2bdma.get
+    u_client_bdma.get.io.csb2dp <> io.csb2bdma.get
 }
 
 val bdma_resp_pd = if(conf.NVDLA_BDMA_ENABLE) Some(u_client_bdma.get.io.client_resp_pd) else None
@@ -219,7 +219,7 @@ u_client_cdma.io.core_req_pop_valid := core_req_pop_valid
 u_client_cdma.io.core_byte_addr := core_byte_addr
 u_client_cdma.io.addr_mask := addr_mask
 u_client_cdma.io.core_req_pd_d1 := core_req_pd_d1
-u_client_cdma.io.csb2client <> io.csb2cdma
+u_client_cdma.io.csb2dp <> io.csb2cdma
 val cdma_resp_pd = u_client_cdma.io.client_resp_pd
 val select_cdma = u_client_cdma.io.select_client
 
@@ -230,7 +230,7 @@ u_client_csc.io.core_req_pop_valid := core_req_pop_valid
 u_client_csc.io.core_byte_addr := core_byte_addr
 u_client_csc.io.addr_mask := addr_mask
 u_client_csc.io.core_req_pd_d1 := core_req_pd_d1
-u_client_csc.io.csb2client <> io.csb2csc
+u_client_csc.io.csb2dp <> io.csb2csc
 val csc_resp_pd = u_client_csc.io.client_resp_pd
 val select_csc = u_client_csc.io.select_client
 
@@ -241,7 +241,7 @@ u_client_cmac_a.io.core_req_pop_valid := core_req_pop_valid
 u_client_cmac_a.io.core_byte_addr := core_byte_addr
 u_client_cmac_a.io.addr_mask := addr_mask
 u_client_cmac_a.io.core_req_pd_d1 := core_req_pd_d1
-u_client_cmac_a.io.csb2client <> io.csb2cmac_a
+u_client_cmac_a.io.csb2dp <> io.csb2cmac_a
 val cmac_a_resp_pd = u_client_cmac_a.io.client_resp_pd
 val select_cmac_a = u_client_cmac_a.io.select_client
 
@@ -252,7 +252,7 @@ u_client_cmac_b.io.core_req_pop_valid := core_req_pop_valid
 u_client_cmac_b.io.core_byte_addr := core_byte_addr
 u_client_cmac_b.io.addr_mask := addr_mask
 u_client_cmac_b.io.core_req_pd_d1 := core_req_pd_d1
-u_client_cmac_b.io.csb2client <> io.csb2cmac_b
+u_client_cmac_b.io.csb2dp <> io.csb2cmac_b
 val cmac_b_resp_pd = u_client_cmac_b.io.client_resp_pd
 val select_cmac_b = u_client_cmac_b.io.select_client
 
@@ -263,7 +263,7 @@ u_client_cacc.io.core_req_pop_valid := core_req_pop_valid
 u_client_cacc.io.core_byte_addr := core_byte_addr
 u_client_cacc.io.addr_mask := addr_mask
 u_client_cacc.io.core_req_pd_d1 := core_req_pd_d1
-u_client_cacc.io.csb2client <> io.csb2cacc
+u_client_cacc.io.csb2dp <> io.csb2cacc
 val cacc_resp_pd = u_client_cacc.io.client_resp_pd
 val select_cacc = u_client_cacc.io.select_client
 
@@ -274,7 +274,7 @@ u_client_sdp_rdma.io.core_req_pop_valid := core_req_pop_valid
 u_client_sdp_rdma.io.core_byte_addr := core_byte_addr
 u_client_sdp_rdma.io.addr_mask := addr_mask
 u_client_sdp_rdma.io.core_req_pd_d1 := core_req_pd_d1
-u_client_sdp_rdma.io.csb2client <> io.csb2sdp_rdma
+u_client_sdp_rdma.io.csb2dp <> io.csb2sdp_rdma
 val sdp_rdma_resp_pd = u_client_sdp_rdma.io.client_resp_pd
 val select_sdp_rdma = u_client_sdp_rdma.io.select_client
 
@@ -285,7 +285,7 @@ u_client_sdp.io.core_req_pop_valid := core_req_pop_valid
 u_client_sdp.io.core_byte_addr := core_byte_addr
 u_client_sdp.io.addr_mask := addr_mask
 u_client_sdp.io.core_req_pd_d1 := core_req_pd_d1
-u_client_sdp.io.csb2client <> io.csb2sdp
+u_client_sdp.io.csb2dp <> io.csb2sdp
 val sdp_resp_pd = u_client_sdp.io.client_resp_pd
 val select_sdp = u_client_sdp.io.select_client
 
@@ -297,7 +297,7 @@ if(conf.NVDLA_PDP_ENABLE){
     u_client_pdp_rdma.get.io.core_byte_addr := core_byte_addr
     u_client_pdp_rdma.get.io.addr_mask := addr_mask
     u_client_pdp_rdma.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_pdp_rdma.get.io.csb2client <> io.csb2pdp_rdma.get
+    u_client_pdp_rdma.get.io.csb2dp <> io.csb2pdp_rdma.get
 }
 
 val pdp_rdma_resp_pd = if(conf.NVDLA_PDP_ENABLE) Some(u_client_pdp_rdma.get.io.client_resp_pd) else None
@@ -312,7 +312,7 @@ if(conf.NVDLA_PDP_ENABLE){
     u_client_pdp.get.io.core_byte_addr := core_byte_addr
     u_client_pdp.get.io.addr_mask := addr_mask
     u_client_pdp.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_pdp.get.io.csb2client <> io.csb2pdp.get
+    u_client_pdp.get.io.csb2dp <> io.csb2pdp.get
 }
 
 val pdp_resp_pd = if(conf.NVDLA_PDP_ENABLE) Some(u_client_pdp.get.io.client_resp_pd) else None
@@ -327,7 +327,7 @@ if(conf.NVDLA_CDP_ENABLE){
     u_client_cdp_rdma.get.io.core_byte_addr := core_byte_addr
     u_client_cdp_rdma.get.io.addr_mask := addr_mask
     u_client_cdp_rdma.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_cdp_rdma.get.io.csb2client <> io.csb2cdp_rdma.get
+    u_client_cdp_rdma.get.io.csb2dp <> io.csb2cdp_rdma.get
 }
 
 val cdp_rdma_resp_pd = if(conf.NVDLA_CDP_ENABLE) Some(u_client_cdp_rdma.get.io.client_resp_pd) else None
@@ -341,7 +341,7 @@ if(conf.NVDLA_CDP_ENABLE){
     u_client_cdp.get.io.core_byte_addr := core_byte_addr
     u_client_cdp.get.io.addr_mask := addr_mask
     u_client_cdp.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_cdp.get.io.csb2client <> io.csb2cdp.get
+    u_client_cdp.get.io.csb2dp <> io.csb2cdp.get
 }
 
 val cdp_resp_pd = if(conf.NVDLA_CDP_ENABLE) Some(u_client_cdp.get.io.client_resp_pd) else None
@@ -355,7 +355,7 @@ if(conf.NVDLA_RUBIK_ENABLE){
     u_client_rubik.get.io.core_byte_addr := core_byte_addr
     u_client_rubik.get.io.addr_mask := addr_mask
     u_client_rubik.get.io.core_req_pd_d1 := core_req_pd_d1
-    u_client_rubik.get.io.csb2client <> io.csb2rbk.get
+    u_client_rubik.get.io.csb2dp <> io.csb2rbk.get
 }
 
 val rbk_resp_pd = if(conf.NVDLA_RUBIK_ENABLE) Some(u_client_rubik.get.io.client_resp_pd) else None

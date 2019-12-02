@@ -114,7 +114,6 @@ withClock(io.nvdla_core_clk){
 
     val req_vld = RegNext(io.csb2glb.req.valid, false.B)
     val req_pd = RegEnable(io.csb2glb.req.bits, io.csb2glb.req.valid)  
-    io.csb2glb.req.ready := true.B
 
     // ========
     // REQUEST

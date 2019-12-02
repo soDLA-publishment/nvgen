@@ -36,7 +36,6 @@ class NV_NVDLA_GLB_fc(implicit val conf: nvdlaConfig) extends Module {
 //             └──┴──┘       └──┴──┘ 
 withClock(io.nvdla_core_clk){
     
-    io.csb2gec.req.ready := true.B
     val req_pvld = io.csb2gec.req.valid
     val rresp_rdat = "b0".asUInt(32.W)
     val wresp_rdat = "b0".asUInt(32.W)

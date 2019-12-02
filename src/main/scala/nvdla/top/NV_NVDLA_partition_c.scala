@@ -18,6 +18,12 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
         //csb
         val csb2cdma = new csb2dp_if 
         val csb2csc = new csb2dp_if
+        //csb cross-through
+        val csb2cacc_src = if(conf.NVDLA_RETIMING_ENABLE) Some(Flipped(new csb2dp_if)) else None
+        val csb2cacc_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(new csb2dp_if) else None
+
+        val csb2cmac_b_src = if(conf.NVDLA_RETIMING_ENABLE) Some(Flipped(new csb2dp_if)) else None
+        val csb2cmac_b_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(new csb2dp_if) else None
 
         //accu2sc
         val accu2sc_credit_size = Flipped(ValidIO(UInt(3.W)))
@@ -25,6 +31,9 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
         //2glb
         val cdma_dat2glb_done_intr_pd = Output(UInt(2.W))
         val cdma_wt2glb_done_intr_pd = Output(UInt(2.W))
+
+        val cacc2glb_done_intr_src_pd = if(conf.NVDLA_RETIMING_ENABLE) Some(Input(UInt(2.W))) else None
+        val cacc2glb_done_intr_dst_pd = if(conf.NVDLA_RETIMING_ENABLE) Some(Output(UInt(2.W))) else None
 
         //mcif
         val cdma_dat2mcif_rd_req_pd = DecoupledIO(UInt(conf.NVDLA_CDMA_MEM_RD_REQ.W))
@@ -73,7 +82,21 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
 //           └─┐  ┐  ┌───────┬──┐  ┌──┘         
 //             │ ─┤ ─┤       │ ─┤ ─┤         
 //             └──┴──┘       └──┴──┘ 
-
+    val u_NV_NVDLA_RT_csc2cmac_b = if(conf.NVDLA_RETIMING_ENABLE)
+                                  Some(Module(new NV_NVDLA_RT_csc2cmac_a(conf.RT_CSC2CMAC_B_LATENCY)))
+                                  else None 
+    val u_NV_NVDLA_RT_csb2cmac = if(conf.NVDLA_RETIMING_ENABLE)
+                                 Some(Module(new NV_NVDLA_RT_csb2dp(3)))
+                                 else None 
+    val u_NV_NVDLA_RT_csb2cacc = if(conf.NVDLA_RETIMING_ENABLE)
+                                 Some(Module(new NV_NVDLA_RT_csb2dp(3)))
+                                 else None 
+    val u_NV_NVDLA_RT_cacc2glb = if(conf.NVDLA_RETIMING_ENABLE)
+                                 Some(Module(new NV_NVDLA_RT_dp2glb(2)))
+                                 else None 
+    val u_NV_NVDLA_cdma = Module(new NV_NVDLA_cdma)  
+    val u_NV_NVDLA_cbuf = Module(new NV_NVDLA_cbuf)
+    val u_NV_NVDLA_csc = Module(new NV_NVDLA_csc)
     ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition C:    Reset Sync                                  //
     ////////////////////////////////////////////////////////////////////////
@@ -110,10 +133,38 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
     val cdma_global_clk_ovr_on_sync = u_global_cdma_clk_ovr_on_sync.io.sync_o 
 
     ////////////////////////////////////////////////////////////////////////
+    // Retiming cell
+    ////////////////////////////////////////////////////////////////////////
+    if(conf.NVDLA_RETIMING_ENABLE){
+        //Retiming path csc->cmac_b 
+        u_NV_NVDLA_RT_csc2cmac_b.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_csc2cmac_b.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_csc2cmac_b.get.io.sc2mac_wt_src <> u_NV_NVDLA_csc.io.sc2mac_wt_b
+        u_NV_NVDLA_RT_csc2cmac_b.get.io.sc2mac_dat_src <> u_NV_NVDLA_csc.io.sc2mac_dat_b
+
+        //Retiming path csb->cmac_b
+        u_NV_NVDLA_RT_csb2cmac.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_csb2cmac.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_csb2cmac.get.io.csb2dp_src <> io.csb2cmac_b_src.get
+        io.csb2cmac_b_dst.get <> u_NV_NVDLA_RT_csb2cmac.get.io.csb2dp_dst
+
+        //Retiming path csb<->cacc 
+        u_NV_NVDLA_RT_csb2cacc.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_csb2cacc.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_csb2cacc.get.io.csb2dp_src <> io.csb2cacc_src.get
+        io.csb2cacc_dst.get <> u_NV_NVDLA_RT_csb2cacc.get.io.csb2dp_dst
+
+        //Retiming path cacc->glbc
+        u_NV_NVDLA_RT_cacc2glb.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_cacc2glb.get.io.nvdla_core_rstn := nvdla_core_rstn
+        u_NV_NVDLA_RT_cacc2glb.get.io.dp2glb_done_intr_src_pd := io.cacc2glb_done_intr_src_pd.get
+        io.cacc2glb_done_intr_dst_pd.get := u_NV_NVDLA_RT_cacc2glb.get.io.dp2glb_done_intr_dst_pd
+
+    }   
+
+    ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition C:    Convolution DMA                             //
     ////////////////////////////////////////////////////////////////////////
-    val u_NV_NVDLA_cdma = Module(new NV_NVDLA_cdma)
-
     u_NV_NVDLA_cdma.io.nvdla_clock.nvdla_core_clk := io.nvdla_core_clk
     u_NV_NVDLA_cdma.io.nvdla_core_rstn := nvdla_core_rstn
     u_NV_NVDLA_cdma.io.nvdla_clock.dla_clk_ovr_on_sync := cdma_dla_clk_ovr_on_sync
@@ -154,7 +205,7 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
     ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition C:    Convolution Buffer                         //
     ////////////////////////////////////////////////////////////////////////
-    val u_NV_NVDLA_cbuf = Module(new NV_NVDLA_cbuf)
+    
 
     u_NV_NVDLA_cbuf.io.nvdla_core_clk := io.nvdla_core_clk
     u_NV_NVDLA_cbuf.io.nvdla_core_rstn := nvdla_core_rstn
@@ -180,7 +231,7 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
     //  NVDLA Partition C:    Convolution Sequence Controller             //
     ////////////////////////////////////////////////////////////////////////
 
-    val u_NV_NVDLA_csc = Module(new NV_NVDLA_csc)
+    
     //clock
     u_NV_NVDLA_csc.io.nvdla_clock.nvdla_core_clk := io.nvdla_core_clk
     u_NV_NVDLA_csc.io.nvdla_core_rstn := nvdla_core_rstn
@@ -218,18 +269,24 @@ class NV_NVDLA_partition_c(implicit val conf: nvdlaConfig) extends Module {
 
 
     //mac_dat & wt
+    if(conf.NVDLA_RETIMING_ENABLE){
+        io.sc2mac_dat_b <> u_NV_NVDLA_RT_csc2cmac_b.get.io.sc2mac_dat_dst
+        io.sc2mac_wt_b <> u_NV_NVDLA_RT_csc2cmac_b.get.io.sc2mac_wt_dst
+    }
+    else{
+        io.sc2mac_dat_b <> u_NV_NVDLA_csc.io.sc2mac_dat_b
+        io.sc2mac_wt_b <> u_NV_NVDLA_csc.io.sc2mac_wt_b
+    }
 
     io.sc2mac_dat_a <> u_NV_NVDLA_csc.io.sc2mac_dat_a
-    io.sc2mac_dat_b <> u_NV_NVDLA_csc.io.sc2mac_dat_b
-
     io.sc2mac_wt_a <> u_NV_NVDLA_csc.io.sc2mac_wt_a
-    io.sc2mac_wt_b <> u_NV_NVDLA_csc.io.sc2mac_wt_b
-
+    
     u_NV_NVDLA_csc.io.cdma2sc_wt_updt <> u_NV_NVDLA_cdma.io.cdma2sc_wt_updt
     u_NV_NVDLA_csc.io.cdma2sc_wmb_entries := 0.U
     u_NV_NVDLA_cdma.io.sc2cdma_wt_updt <> u_NV_NVDLA_csc.io.sc2cdma_wt_updt      
 
     u_NV_NVDLA_csc.io.pwrbus_ram_pd := io.pwrbus_ram_pd
+
 
 }
 

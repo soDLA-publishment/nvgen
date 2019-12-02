@@ -18,7 +18,7 @@ class NV_NVDLA_partition_o(implicit val conf: nvdlaConfig) extends Module {
         val nvdla_core_rstn = Output(Bool())
         val nvdla_clk_ovr_on = Output(Clock())
 
-        val dla_reset_rstn = Input(Bool())
+        val dla_reset_rstn = Input(Bool())   
 
         //cdma
         val csb2cdma = Flipped(new csb2dp_if)
@@ -109,6 +109,12 @@ class NV_NVDLA_partition_o(implicit val conf: nvdlaConfig) extends Module {
         val core_intr = Output(Bool())
         val pwrbus_ram_pd = Input(UInt(32.W))
 
+        //cross-though
+        val sc2mac_dat_a_src = if(conf.NVDLA_RETIMING_ENABLE) Some(Flipped(ValidIO(new csc2cmac_data_if)))  else None 
+        val sc2mac_wt_a_src = if(conf.NVDLA_RETIMING_ENABLE) Some(Flipped(ValidIO(new csc2cmac_wt_if))) else None                         
+        val sc2mac_dat_a_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(ValidIO(new csc2cmac_data_if)) else None 
+        val sc2mac_wt_a_dst = if(conf.NVDLA_RETIMING_ENABLE) Some(ValidIO(new csc2cmac_wt_if)) else None  
+
     })
 //     
 //          ┌─┐       ┌─┐
@@ -182,6 +188,11 @@ class NV_NVDLA_partition_o(implicit val conf: nvdlaConfig) extends Module {
     val u_NV_NVDLA_cdp = if(conf.NVDLA_CDP_ENABLE) Some(Module(new NV_NVDLA_cdp)) else None
     val u_NV_NVDLA_pdp = if(conf.NVDLA_PDP_ENABLE) Some(Module(new NV_NVDLA_pdp)) else None
     val u_NV_NVDLA_glb = Module(new NV_NVDLA_glb)
+    val u_NV_NVDLA_RT_csc2cmac_a = if(conf.NVDLA_RETIMING_ENABLE) Some(Module(new NV_NVDLA_RT_csc2cmac_a(conf.RT_CSC2CMAC_A_LATENCY))) else None
+    val u_NV_NVDLA_RT_csb2cmac = if(conf.NVDLA_RETIMING_ENABLE)
+                                 Some(Module(new NV_NVDLA_RT_csb2dp(3)))
+                                 else None 
+
     ////////////////////////////////////////////////////////////////////////
     //  NVDLA Partition O:    CSB master                                  //
     ////////////////////////////////////////////////////////////////////////
@@ -210,7 +221,12 @@ class NV_NVDLA_partition_o(implicit val conf: nvdlaConfig) extends Module {
     //csc
     u_NV_NVDLA_csb_master.io.csb2csc <> io.csb2csc
     //cmac
-    u_NV_NVDLA_csb_master.io.csb2cmac_a <> io.csb2cmac_a
+    if(conf.NVDLA_RETIMING_ENABLE){   
+        u_NV_NVDLA_RT_csb2cmac.get.io.csb2dp_src <> io.csb2cmac_a
+    }
+    else{
+        u_NV_NVDLA_csb_master.io.csb2cmac_a <> io.csb2cmac_a 
+    }
     u_NV_NVDLA_csb_master.io.csb2cmac_b <> io.csb2cmac_b
     //cacc
     u_NV_NVDLA_csb_master.io.csb2cacc <> io.csb2cacc
@@ -425,6 +441,29 @@ class NV_NVDLA_partition_o(implicit val conf: nvdlaConfig) extends Module {
     u_NV_NVDLA_glb.io.cdma_dat2glb_done_intr_pd := io.cdma_dat2glb_done_intr_pd
     u_NV_NVDLA_glb.io.cdma_wt2glb_done_intr_pd := io.cdma_wt2glb_done_intr_pd
     u_NV_NVDLA_glb.io.sdp2glb_done_intr_pd := io.sdp2glb_done_intr_pd
+
+    ////////////////////////////////////////////////////////////////////////
+    //  NVDLA Partition O:    Retiming path csc->cmac_a                   //
+    ////////////////////////////////////////////////////////////////////////
+    if(conf.NVDLA_RETIMING_ENABLE){
+        //Retiming path csc->cmac_a 
+        u_NV_NVDLA_RT_csc2cmac_a.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_csc2cmac_a.get.io.nvdla_core_rstn := io.nvdla_core_rstn
+        u_NV_NVDLA_RT_csc2cmac_a.get.io.sc2mac_wt_src <> io.sc2mac_wt_a_src.get
+        u_NV_NVDLA_RT_csc2cmac_a.get.io.sc2mac_dat_src <> io.sc2mac_dat_a_src.get
+        io.sc2mac_wt_a_dst.get <> u_NV_NVDLA_RT_csc2cmac_a.get.io.sc2mac_wt_dst
+        io.sc2mac_dat_a_dst.get <> u_NV_NVDLA_RT_csc2cmac_a.get.io.sc2mac_dat_dst
+    }   
+
+    ////////////////////////////////////////////////////////////////////////
+    //  NVDLA Partition O:    Retiming path csb<->cmac_a                  //
+    ////////////////////////////////////////////////////////////////////////
+    if(conf.NVDLA_RETIMING_ENABLE){
+        u_NV_NVDLA_RT_csb2cmac.get.io.nvdla_core_clk := io.nvdla_core_clk
+        u_NV_NVDLA_RT_csb2cmac.get.io.nvdla_core_rstn := io.nvdla_core_rstn
+        u_NV_NVDLA_csb_master.io.csb2cmac_a <> u_NV_NVDLA_RT_csb2cmac.get.io.csb2dp_dst
+    }
+
 
 
 
