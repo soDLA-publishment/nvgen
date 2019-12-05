@@ -8,4 +8,4 @@ Different from soDLA, this repo is to explore the design agility between hardwar
 
 12/2/2019
 1. Support retiming.
-2. Remove ready signal.
+2. Remove ready signal in csb2dp.
